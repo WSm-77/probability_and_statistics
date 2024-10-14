@@ -1,0 +1,398 @@
+---
+title: "02-R_practice"
+author: "Hubert Guzowski"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r check for package existence}
+install_if_not_installed <- function(packageName) {
+  if (nzchar(system.file(package = packageName))) {
+    print(paste("Package", packageName, "is already installed."))
+
+  } else {
+    print("Installing", packageName)
+    install.packages(packageName)
+  }
+}
+```
+
+## Wprowadzenie do programowania w R - cz. 2
+
+Podczas tego laboratorium przestawione zostanie kilka narzędzi statystycznych w R a następnie pochylimy się nad bliższą praktyce analizą statystyczną wybranego zbioru danych.
+
+## 1. Funkcje wbudowane, biblioteka standardowa, instalacja pakietów
+
+Funkcjonalności dostępne w ramach języka programowania zwykle można podzielić na 3 grupy na podstawie ich dostępności. Pierwszą z nich są funkcjonalności wbudowane (built-ins), których nie musimy ładować do programu - są częścią składni języka i w rezultacie są od razu obecne w przestrzeni nazw.
+
+```{r built-ins}
+builtins()[1:50] # Funkcja listująca wszystkie nazwy built-ins. [1:50] selekcjonuje tylko wycinek listy
+```
+
+Drugą kategorią są pakiety instalowane razem z językiem, które nie są domyślnie załadowane. Razem z built-ins nazywa się je często biblioteką standardową. Rozmiary tych bibliotek różnią się w zależności od języka - np. python i R dostarczają znacznie więcej gotowych funkcji, niż C.
+
+Poniżej przykład, jak możemy ładnie wylistować zainstalowane pakiety. Priorytet "base", to pakiety wbudowane a "recommended", to domyślnie zainstalowane, ale nie załadowane.
+
+```{r standard-lib}
+i <- installed.packages()
+i[ i[,"Priority"] %in% c("base","recommended"), c("Package", "Priority")]
+```
+
+Załadujmy przykładowy rekomendowany pakiet i sprawdźmy, co zawiera:
+
+```{r lib load}
+library(MASS) # MASS = Modern Applied Statistics with S
+ls(getNamespace("MASS"), all.names = TRUE)[1:50]
+```
+
+Ostatnią kategorią pakietów są te od dostawców zewnętrznych (third party). Często zawierają najbardziej wyspecjalizowane i rozbudowane funkcjonalności przygotowane w jakimś konkretnym celu. Najczęściej pakiety te można pobrać z repozytorium CRAN (Comprehensive R Archive Network). Zainstalujmy dla przykładu jeden z popularniejszych pakietów i zobaczmy, co możemy dzięki niemu zrobić.
+
+```{r install package}
+install_if_not_installed("flextable")
+```
+
+```{r flextable example}
+library(flextable) # Ładowanie pakietu
+
+flextable(mtcars) # Flextable zgodnie z nazwą służy do tworzenia konfigurowalnych tabelek w RMarkdown
+```
+
+## 2. Rozkłady prawdopodobieństwa
+
+Oczywiście na zajęciach ze statystyki będą nam też potrzebne rozkłady prawdopodobieństwa. Na ogół są reprezentowane przez 4 funkcje:
+
+-   `dxx` - gęstość lub funkcja prawdopodobieństwa
+-   `pxx` - dystrybuanta
+-   `qxx` - funkcja kwantylowa
+-   `rxx` - losowanie zgodne z rozkładem.
+
+`xx` jest ciągiem znaków oznaczającym rozkład, np. `unif` - rozkład jednostajny, `norm` - normalny, `binom` - dwumianowy, `pois` - Poissona, `t` - t (Studenta), `f` - F (Fishera-Snedecora).
+
+```{r probs}
+dnorm(2.3)
+pnorm(2.3)
+x1 <- rnorm(10)
+mean(x1)
+var(x1)
+sd(x1)
+x2 <- rnorm(10, mean = 1, sd = 5)
+mean(x2)
+var(x2)
+sd(x2)
+dpois(2, lambda = 1)
+rpois(10, lambda = 1)
+qpois(0.75, lambda = 1)
+```
+
+Dla osiągnięcia potwarzalności obliczeń z czynnikiem losowym stosuje się funkcję `set.seed()`
+
+```{r seeding}
+rnorm(10)
+rnorm(10)
+set.seed(2020)
+rnorm(10)
+set.seed(2020)
+rnorm(10)
+```
+
+## 3. Praca z ramkami danych
+
+Na ostatnich ćwiczeniach ramki danych zostały krótko wspomniane. W tej sekcji rozwiniemy ich wykorzystanie poznając nowe funkcjonalności oraz pracując z jednym z klasycznych zbiorów danych - iris. Zawiera on pomiary długości i szerokości płatków korony (petal) oraz kielicha (sepal) dla 3 różnych gatunków irysów.
+
+```{r iris dataset}
+data(iris)
+iris
+```
+
+Pod nazwami kolumn możemy zauważyć ich typ. `dbl` to znany nam już typ zmiennoprzecinkowy double. `fctr` to factor. Jest to typ o skończonym zestawie wartości, a więc reprezentuje zmienne kategoryczne (uporządkowane lub nie). Wewnętrznie reprezentowany jest przez wektor całkowitoliczbowy. Czynniki powstają z wektorów, których składowe przyjmują wartości z pewnego (zwykle niewielkiego) zbioru. Są specjalnie traktowane przez wiele funkcji przetwarzających dane.
+
+```{r factor}
+iris[iris$Species == "setosa",]     # wybieramy wiersze o wartości "setosa" i wszystkie kolumny (jeżeli nic nie ma po przecinku to wyjmujemy wszystkie kolumny)
+```
+
+Jeżeli chcemy wyjąć kilka kolumn jednocześnie, to jako drugi argument po przecinku podajemy wektor stworzony z ich nazw.
+
+```{r factor continued}
+iris[iris$Species %in% c("setosa", "virginica"), c("Sepal.Length", "Sepal.Width")]
+```
+
+R dostarcza nam bardzo przydatnej funkcji podsumowującej, która robi kilka rzeczy na raz.
+
+```{r summary}
+summary(iris)
+```
+
+Pakiety zewnętrzne dodatkowo ułatwią nam pracę z ramkami danych. dplyr dostarcza zestaw narzędzi, które bardzo upraszczają składnię operacji. Jest to jeden z szeroko wykorzystywanych pakietów zawartych w zestawie data-sciencowym paczek w R o nazwie Tidyverse.(https://dplyr.tidyverse.org/)
+
+```{r dplyr}
+install_if_not_installed("dplyr")
+```
+
+Z pomocą tego pakietu możemy tworzyć pipeline'y wykorzystując operator %>%, który przekazuje wynik jednej operacji do drugiej. Poniżej zaczynamy od zbioru danych, by następnie pogrupować wyniki ze względu na gatunek i na końcu zebrać je wykorzystując jako agregator wyliczenie średniej.
+
+```{r migittr pipeline}
+library(dplyr)
+
+iris %>% group_by(Species) %>% summarise(mean_petal_length = mean(Petal.Length))
+```
+
+Możemy teraz w wygodny sposób przeprowadzać relatywnie skomplikowane operacje:
+
+```{r operating on dataframes}
+iris %>% filter(Species == "setosa") # Wybierz tylko rekordy z gatunku setosa
+iris %>% filter(Sepal.Length > 5, Species %in% c("setosa", "virginica")) # Połączenie 2 warunków wyboru
+iris %>% select(Sepal.Length, Petal.Length) # Tym razem wybieramy tylko 2 kolumny
+iris %>% select(-Sepal.Width, -Petal.Width) # Albo wszystkie kolumny poza dwoma
+iris %>% group_by(Species) %>% summarise(count = n()) # Zliczamy liczności rekordów w gatunkach
+iris %>% summarise(var_petal_length = var(Sepal.Length)) # Wyliczamy wariancję długości płatków
+iris %>% mutate(Sepal.Area = Sepal.Length * Sepal.Width) # Mutate tworzy nową kolumnę
+```
+
+Możemy też korzystać z wbudowanych pipeline'ów:
+
+```{r built in pipeline}
+iris |> filter(Species == "setosa")
+```
+
+Możemy też łączyć rekordy z dwóch tabel:
+
+```{r join}
+id_1 <- c("A", "B", "C", "D")
+id_2 <- c("A", "B", "C", "E")
+name <- c("John", "Jane", "Bob", "Jake")
+age <- c(25, 30, 35, 40)
+city <- c("New York", "Los Angeles", "Chicago", "Detroit")
+
+df_1 <- data.frame(ID = id_1, Name = name, Age = age)
+df_2 <- data.frame(ID = id_2, City = city)
+
+left_join(df_1, df_2, by = "ID")
+right_join(df_1, df_2, by = "ID")
+inner_join(df_1, df_2, by = "ID")
+full_join(df_1, df_2, by = "ID")
+```
+
+## 4. Proste wykresy z Plotly
+
+Plotly jest popularnym pakietem wykorzystywanym do wizualizacji zarówno w języku R, jak i python. Na stronie https://plotly.com/r/ możemy znaleźć wiele przykładów kodu do przygotowania wykresów. Poniżej narysujemy kilka podstawowych. Plotly jest otwarto-źródłowym projektem dostarczonym przez zewnętrzną organizację, więc należy go najpierw pobrać z CRAN:
+
+```{r install plotly}
+install_if_not_installed("plotly")
+```
+
+Jednym ze standardowych sposobów wizualizacji rozkładu zmiennej są histogramy. Dostarczają graficznie znacznie więcej informacji, niż prosta średnia i zakresy.
+
+```{r iris histogram}
+library(plotly)
+fig <- plot_ly(iris, x= ~Sepal.Length, type = "histogram")
+
+fig
+```
+
+```{r iris histogram overlap}
+fig <- plot_ly(alpha = 0.6)
+fig <- fig %>% add_histogram(x = iris[iris$Species == "setosa", "Sepal.Length"], name = "setosa")
+fig <- fig %>% add_histogram(x = iris[iris$Species == "versicolor", "Sepal.Length"], name = "versicolor")
+fig <- fig %>% add_histogram(x = iris[iris$Species == "virginica", "Sepal.Length"], name = "virginica")
+fig <- fig %>% layout(barmode = "overlay")
+
+fig
+```
+
+Wykresy pudełkowe dostarczają bardzo podobne dane, co funkcja summary wykonana dla ramki danych, ale w formie graficznej, która pozwala łatwo porównać wartości. W plotly wykresy są interaktywne - najedź na elementy wykresu pudełkowego, by otrzymać dokładniejsze informacje.
+
+```{r iris boxplots}
+fig <- plot_ly(y = iris[iris$Species == "setosa", "Sepal.Length"],
+               name = "setosa",
+               type = "box")
+
+fig <- fig %>% add_trace(y = iris[iris$Species == "versicolor", "Sepal.Length"],
+                         name ="versicolor",
+                         type = "box")
+
+fig
+```
+
+Kolejne wykresy wizualizują dane 3-wymiarowe. Wykorzystamy więc zbiór danych zawierający mapę topograficzną wulkanu Maunga Whau, który znajduje się na polu wulkanicznym Aucklan. Formatem zbioru jest macierz 10 x 10 z wartością wysokości w każdej komórce.
+
+```{r contour plot}
+fig <- plot_ly(z = ~volcano, type = "contour")
+
+fig
+```
+
+```{r 3d surface plot}
+fig <- plot_ly(z = ~volcano)
+fig <- fig %>% add_surface()
+
+fig
+```
+
+## Ćwiczenia w trakcie zajęć
+
+Zadania oparte są na zbiorze danych Auto:
+
+```{r auto}
+install_if_not_installed("ISLR") # Paczka zbiorów danych z książki Introduction to Statistical Learning in R
+library(ISLR)
+data(Auto)
+Auto
+```
+
+Należy napisać skrypt w R, który znajduje następujące informacje.
+
+1.  Jakie jest średnie zużycie paliwa (mpg) wszystkich samochodów?
+```{r auto mean mpg}
+Auto %>% summarise(mean = mean(mpg))
+```
+
+Alternatywnie:
+
+```{r auto mean mpg version 2}
+mean(Auto[,"mpg"])
+```
+
+2.  Jakie jest średnie zużycie paliwa samochodów, które mają 4 cylindry?
+```{r auto with 4 cylinder mean mpg}
+Auto %>% filter(cylinders == 4) %>% summarise(mean = mean(mpg))
+```
+
+Alternatywnie:
+
+```{r auto with 4 cylinder mean mpg 2}
+mean(Auto[Auto$cylinders == 4,"mpg"])
+```
+
+3.  Jaka jest mediana wagi (weight) wszystkich samochodów?
+```{r wight median}
+Auto %>% summarise(median = median(weight))
+```
+
+Alternatywnie:
+
+```{r wight median 2}
+Auto[, "weight"] %>% median()
+```
+
+4.  Jakie jest średnie zużycie paliwa samochodów wyprodukowanych w roku 72?
+```{r produced in 72 mpg mean}
+Auto[Auto$year == 72, "mpg"] |> mean()
+```
+
+5.  Jaka jest wariancja przyspieszenia (acceleration) wszystkich samochodów?
+```{r standard deviation of acceleration}
+Auto[, "acceleration"] |> sd()
+```
+
+6.  Jaka jest wariancja przyspieszenia samochodów japońskich (origin == 3)?
+```{r japanese cars acceleration variance}
+Auto %>% filter(origin == 3) %>% summarise(standard_deviation = sd(acceleration))
+```
+
+Alternatywnie:
+
+```{r japanese cars acceleration variance 2}
+Auto[Auto$origin == 3, "acceleration"] %>% var()
+```
+
+7.  Ile jest samochodów, których moc (horsepower) jest powyżej średniej?
+```{r horsepower above mean}
+horsepowerMean <- Auto[, "horsepower"] %>% mean()
+horsepowerMean
+Auto %>% filter(Auto$horsepower > horsepowerMean) %>% summarise(count = n())
+```
+
+Alternatywnie:
+
+```{r horsepower above mean 2}
+length(Auto[Auto$horsepower > horsepowerMean, "horsepower"])
+```
+
+8.  Jaka jest maksymalna moc samochodów, których waga jest poniżej średniej?
+```{r max powero of cars with weight below mean}
+weightMean <- Auto[,"weight"] %>% mean()
+Auto %>% filter(Auto$weight < weightMean) %>% summarise(maxHorsePower = max(horsepower))
+```
+
+Alternatywnie:
+
+```{r max powero of cars with weight below mean 2}
+Auto[Auto$weight < weightMean, "horsepower"] %>% max()
+```
+
+9.  Ile jest samochodów, których zużycie paliwa jest poniżej średniej (czyli mpg jest powyżej średniej)?
+```{r lowest petrol consumption}
+meanMpg <- Auto[, "mpg"] |> mean()
+Auto %>% filter(Auto$mpg > meanMpg) %>% summarise(count = n())
+```
+
+Alternatywnie:
+
+```{r lowest petrol consumption2}
+length(Auto[Auto$mpg > meanMpg, "mpg"])
+```
+
+10. Jaka jest minimalna liczba cylindrów samochodów, których zużycie paliwa jest poniżej średniej?
+```{r min cylinders}
+min(Auto[Auto$mpg > mean(Auto$mpg), "cylinders"])
+```
+
+11. Ile jest samochodów o maksymalnej pojemności silnika (displacement)?
+```{r cars count with max displacement}
+length(Auto[Auto$displacement == max(Auto$displacement), "displacement"])
+```
+
+12. Jaka jest maksymalna waga (weight) samochodów, których pojemność silnika jest mniejsza od jej mediany?
+```{r max weight}
+max(Auto[Auto$displacement < median(Auto$displacement), c("weight")])
+```
+
+13. Zwizualizuj z wykorzystaniem wykresu pudełkowego informacje o wadze aut z podziałem w zależności od kraju produkcji
+```{r visualize cars weight based on origin}
+weightBoxPlot <- plot_ly(y = Auto[Auto$origin == 1, "weight"],
+                        name = "American",
+                        type = "box")
+
+weightBoxPlot <- weightBoxPlot %>% add_trace(y = Auto[Auto$origin == 2, "weight"],
+                                            name = "European",
+                                            type = "box")
+
+weightBoxPlot <- weightBoxPlot %>% add_trace(y = Auto[Auto$origin == 3, "weight"],
+                                            name = "Japanese",
+                                            type = "box")
+
+weightBoxPlot
+```
+
+14. Zwizualizuj moc aut na histogramie z podziałem w zależności od ilości cylindrów.
+```{r}
+horsepowerHist <- plot_ly(alpha = 0.6)
+horsepowerHist <- horsepowerHist %>% add_histogram(x = Auto[Auto$cylinders == 3, "horsepower"], name = "3")
+horsepowerHist <- horsepowerHist %>% add_histogram(x = Auto[Auto$cylinders == 4, "horsepower"], name = "4")
+horsepowerHist <- horsepowerHist %>% add_histogram(x = Auto[Auto$cylinders == 5, "horsepower"], name = "5")
+horsepowerHist <- horsepowerHist %>% add_histogram(x = Auto[Auto$cylinders == 6, "horsepower"], name = "6")
+horsepowerHist <- horsepowerHist %>% add_histogram(x = Auto[Auto$cylinders == 8, "horsepower"], name = "8")
+horsepowerHist <- horsepowerHist %>% layout(barmode = "overlay")
+
+horsepowerHist
+```
+
+Alternatywnie:
+
+```{r}
+distinctCylinders <- sort(unique(Auto$cylinders))
+
+horsepowerHist <- plot_ly(alpha = 0.6)
+
+for (distinctCylinder in distinctCylinders) {
+    horsepowerHist <- horsepowerHist %>% add_histogram(x = Auto[Auto$cylinders == distinctCylinder, "horsepower"],
+                                                        name = paste(as.character(distinctCylinder), "cylinders"))
+}
+
+horsepowerHist <- horsepowerHist %>% layout(barmode = "overlay")
+
+horsepowerHist
+```
