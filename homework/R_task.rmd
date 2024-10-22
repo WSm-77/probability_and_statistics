@@ -64,21 +64,6 @@ phys_df[, c("AlcoholYear", "AlcoholDay", "AlcoholConsumption")]
 
 # mediana średniego rocznego spożycia alkoholu
 median(phys_df$AlcoholConsumption[!is.na(phys_df$AlcoholConsumption)])
-phys_df$AlcoholConsumption[is.na(phys_df$AlcoholConsumption)] = 0
-median(phys_df$AlcoholConsumption)
-```
-
-```{r}
-phys_df$AlcoholConsumption <- phys_df$AlcoholDay * phys_df$AlcoholYear
-phys_df$AlcoholConsumption
-
-# Korzystamy z funkcji replace() do zamianay wartości "NA" na "0"
-df_modified <- replace(phys_df[, c("AlcoholYear", "AlcoholDay", "AlcoholConsumption")], is.na(phys_df[, c("AlcoholYear", "AlcoholDay", "AlcoholConsumption")]), 0)
-# View the modified DataFrame
-print(df_modified[, c("AlcoholYear", "AlcoholDay", "AlcoholConsumption")])
-alcCons <- df_modified$AlcoholConsumption
-length(alcCons[alcCons == 0])
-median(df_modified$AlcoholConsumption)
 ```
 
 2. Utwórz nową tabelę phys_f_df odfiltrowując wartości puste z tabeli phys_df. Na jej podstawie odpowiedz, jest średnia wartość pulsu, ilość godzin snu oraz liczność wierszy dla każdej kategorii BMI_WHO?
