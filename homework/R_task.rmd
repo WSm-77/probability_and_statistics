@@ -85,4 +85,9 @@ filtered_df %>% select(ID, Gender, Education, Pulse) %>% summarise(RowsCount = n
 ```
 
 4. Zwizualizuj na wykresie punktowym zależność wagi od wysokości na podstawie tabeli phys_df.
+```{r}
+phys_df_plot <- plot_ly(y = phys_df$Weight, x = phys_df$Height , type = "scatter")
+phys_df_plot
+```
+
 5*. Utwórz nową tabelę stat_s_df na podstawie stat_df, ale z dwoma nowymi kolumnami. Jedna (rnorm_col) powinna zawierać różne wartości z rozkładu normalnego o średniej 10 i odchyleniu standardowym 5. Druga (runif_col) z rozkładu jednostajnego od -5 do 20. Dodaj teraz nową kolumnę Distributions, która zawiera wartość z kolumny runif_col jeśli wartość kategorii Gender w wierszu to "male" oraz wartość z kolumny rnorm_col w przeciwnym wypadku. Zwizualizuj na histogramie w trybie overlay wartości kolumny distributions z podziałem kolorystycznym w zależności od płci.
