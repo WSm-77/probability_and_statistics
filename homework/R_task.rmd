@@ -1,0 +1,87 @@
+---
+title: "R_practice_task"
+author: "Hubert Guzowski"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Zadanie podsumowujące wiedzę z języka R
+
+Na początku zadania znajduje się kilka komórek przygotowujących środowisko.
+Instalowane i importowane są biblioteki i przygotowywane zbiory danych do pracy.
+Zadanie jest oparte o dane zdrowotne populacji zbierane poprzez ankiety i badania przez Amerykański NCHS.
+Opis zbioru: https://cran.r-project.org/web/packages/NHANES/NHANES.pdf
+
+```{r install required dataset}
+install.packages("NHANES", repos = "http://cran.us.r-project.org")
+```
+
+Poza zbiorem NHANES potrzebne będą też znane już biblioteki dplyr i plotly.
+
+```{r load libraries}
+library(NHANES)
+library(dplyr)
+library(plotly)
+```
+
+```{r NHANES summary}
+data("NHANES")
+count(NHANES)
+names(NHANES)
+```
+
+Na potrzeby zadania posłużymy się jedynie wycinkiem NHANES
+
+```{r prepare datasets}
+stat_df <- NHANES %>%
+            filter(SurveyYr == "2009_10") %>%
+            filter(Age > 18) %>%
+            select(ID, Gender, Age, Education) %>%
+            distinct()
+
+phys_df <- NHANES %>%
+             filter(SurveyYr == "2009_10") %>%
+             filter(Height <= 190) %>%
+             select(ID, Height, Weight, BMI, BMI_WHO, SleepHrsNight, SleepTrouble, AlcoholDay, AlcoholYear, Pulse) %>%
+             distinct()
+```
+
+Każde z poniższych zadań stawia pytanie odnośnie wartości do wyliczenia. Formą odpowiedzi jest komórka kodu, która po wykonaniu w jasny sposób wypisze pożądaną wartość w formie numerycznej, tabelki bądź wykresu.
+
+### Zadania
+1. Przeczytaj opisy kolumn AlcoholDay oraz AlcoholYear (w dokumentacji lub za pomocą komendy help()). Do tabeli phys_df dołącz nową kolumnę z oszacowanym średnim rocznym spożyciem alkoholu dla każdej osoby. Jaka jest mediana średniego rocznego spożycia alkoholu w zbadanej populacji?
+```{r}
+alcoholDay <- phys_df$AlcoholDay
+alcoholYear <- phys_df$AlcoholYear
+alcoholConsumption <- alcoholDay * alcoholYear
+phys_df$AlcoholConsumption <- alcoholConsumption
+
+# sprawdźmy czy dodano kolumnę
+phys_df[, c("AlcoholYear", "AlcoholDay", "AlcoholConsumption")]
+
+# mediana średniego rocznego spożycia alkoholu
+median(phys_df$AlcoholConsumption[!is.na(phys_df$AlcoholConsumption)])
+phys_df$AlcoholConsumption[is.na(phys_df$AlcoholConsumption)] = 0
+median(phys_df$AlcoholConsumption)
+```
+
+```{r}
+phys_df$AlcoholConsumption <- phys_df$AlcoholDay * phys_df$AlcoholYear
+phys_df$AlcoholConsumption
+
+# Korzystamy z funkcji replace() do zamianay wartości "NA" na "0"
+df_modified <- replace(phys_df[, c("AlcoholYear", "AlcoholDay", "AlcoholConsumption")], is.na(phys_df[, c("AlcoholYear", "AlcoholDay", "AlcoholConsumption")]), 0)
+# View the modified DataFrame
+print(df_modified[, c("AlcoholYear", "AlcoholDay", "AlcoholConsumption")])
+alcCons <- df_modified$AlcoholConsumption
+length(alcCons[alcCons == 0])
+median(df_modified$AlcoholConsumption)
+```
+
+2. Utwórz nową tabelę phys_f_df odfiltrowując wartości puste z tabeli phys_df. Na jej podstawie odpowiedz, jest średnia wartość pulsu, ilość godzin snu oraz liczność wierszy dla każdej kategorii BMI_WHO?
+3. Do wierszy w tabeli stat_df dołącz informacje z tabeli phys_df tworząc nową tabelę full_df. Następnie odfiltruj z niej wiersze, gdzie brakuje obu informacji o poziomie edukacji i pomiarze pulsu. Ile wierszy ma wynikowa tabela?
+4. Zwizualizuj na wykresie punktowym zależność wagi od wysokości na podstawie tabeli phys_df.
+5*. Utwórz nową tabelę stat_s_df na podstawie stat_df, ale z dwoma nowymi kolumnami. Jedna (rnorm_col) powinna zawierać różne wartości z rozkładu normalnego o średniej 10 i odchyleniu standardowym 5. Druga (runif_col) z rozkładu jednostajnego od -5 do 20. Dodaj teraz nową kolumnę Distributions, która zawiera wartość z kolumny runif_col jeśli wartość kategorii Gender w wierszu to "male" oraz wartość z kolumny rnorm_col w przeciwnym wypadku. Zwizualizuj na histogramie w trybie overlay wartości kolumny distributions z podziałem kolorystycznym w zależności od płci.
