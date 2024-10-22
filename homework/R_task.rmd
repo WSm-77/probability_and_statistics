@@ -76,5 +76,13 @@ phys_f_df_symmary
 ```
 
 3. Do wierszy w tabeli stat_df dołącz informacje z tabeli phys_df tworząc nową tabelę full_df. Następnie odfiltruj z niej wiersze, gdzie brakuje obu informacji o poziomie edukacji i pomiarze pulsu. Ile wierszy ma wynikowa tabela?
+```{r}
+full_df <- full_join(stat_df, phys_df, by = "ID")
+full_df
+
+filtered_df <- full_df %>% filter(!is.na(full_df$Education), !is.na(full_df$Pulse))
+filtered_df %>% select(ID, Gender, Education, Pulse) %>% summarise(RowsCount = n())
+```
+
 4. Zwizualizuj na wykresie punktowym zależność wagi od wysokości na podstawie tabeli phys_df.
 5*. Utwórz nową tabelę stat_s_df na podstawie stat_df, ale z dwoma nowymi kolumnami. Jedna (rnorm_col) powinna zawierać różne wartości z rozkładu normalnego o średniej 10 i odchyleniu standardowym 5. Druga (runif_col) z rozkładu jednostajnego od -5 do 20. Dodaj teraz nową kolumnę Distributions, która zawiera wartość z kolumny runif_col jeśli wartość kategorii Gender w wierszu to "male" oraz wartość z kolumny rnorm_col w przeciwnym wypadku. Zwizualizuj na histogramie w trybie overlay wartości kolumny distributions z podziałem kolorystycznym w zależności od płci.
