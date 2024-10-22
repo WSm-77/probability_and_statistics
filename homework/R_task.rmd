@@ -91,3 +91,27 @@ phys_df_plot
 ```
 
 5*. Utwórz nową tabelę stat_s_df na podstawie stat_df, ale z dwoma nowymi kolumnami. Jedna (rnorm_col) powinna zawierać różne wartości z rozkładu normalnego o średniej 10 i odchyleniu standardowym 5. Druga (runif_col) z rozkładu jednostajnego od -5 do 20. Dodaj teraz nową kolumnę Distributions, która zawiera wartość z kolumny runif_col jeśli wartość kategorii Gender w wierszu to "male" oraz wartość z kolumny rnorm_col w przeciwnym wypadku. Zwizualizuj na histogramie w trybie overlay wartości kolumny distributions z podziałem kolorystycznym w zależności od płci.
+```{r}
+stat_df_row_count <- nrow(stat_df)
+rnorm_col <- rnorm(stat_df_row_count, mean = 10, sd = 5)
+runif_col <- runif(stat_df_row_count, min = -5, max = 20)
+
+stat_s_df <- stat_df %>%
+            mutate(rnorm_col = rnorm_col) %>%
+            mutate(runif_col = runif_col) %>%
+            mutate(Distributions = if_else(Gender == "male", runif_col, rnorm_col))
+stat_s_df
+
+maleFiltered_df <- stat_s_df[stat_s_df$Gender == "male", "Distributions"]
+femaleFiltered_df <- stat_s_df[stat_s_df$Gender == "female", "Distributions"]
+
+hist <- plot_ly(alpha = 0.5)
+
+hist <- hist %>% add_histogram(x = maleFiltered_df$Distributions, name = "male")
+hist <- hist %>% add_histogram(x = femaleFiltered_df$Distributions, name = "female")
+
+hist <- hist %>% layout(barmode = "overlay")
+
+
+hist
+```
